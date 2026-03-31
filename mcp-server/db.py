@@ -6,45 +6,16 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "people.db")
 CSV_PATH = os.path.join(os.path.dirname(__file__), "../data/people-list-export.csv")
 
 
-def get_connection():
+def get_db_connection():
     return sqlite3.connect(DB_PATH)
 
 
-def init_db():
-    con = get_connection()
-    cur = con.cursor()
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS people (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT,
-            work_status TEXT,
-            start_date TEXT,
-            job TEXT,
-            work_email TEXT,
-            team TEXT,
-            reports_to TEXT,
-            office TEXT,
-            salary_amount REAL,
-            salary_currency TEXT,
-            salary_type TEXT,
-            tenure TEXT,
-            country TEXT,
-            city TEXT,
-            first_name TEXT,
-            last_name TEXT,
-            date_of_birth TEXT,
-            gender TEXT,
-            contract_type TEXT
-        )
-    """)
-
-    cur.execute("DELETE FROM people")
-
-    with open(CSV_PATH, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
+def _ingest(cursor):
+    cursor.execute("DELETE FROM people")
+    with open(CSV_PATH, newline="", encoding="utf-8") as csv_file:
+        reader = csv.DictReader(csv_file)
         for row in reader:
-            cur.execute("""
+            cursor.execute("""
                 INSERT INTO people (
                     full_name, work_status, start_date, job, work_email,
                     team, reports_to, office, salary_amount, salary_currency,
@@ -72,7 +43,45 @@ def init_db():
                 row["Gender"],
                 row["Contract Type"],
             ))
+    print(f"DB ingested from {CSV_PATH}")
 
-    con.commit()
-    con.close()
-    print(f"DB initialized at {DB_PATH}")
+
+def init_db():
+    db_exists = os.path.exists(DB_PATH)
+    csv_newer = not db_exists or os.path.getmtime(CSV_PATH) > os.path.getmtime(DB_PATH)
+
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS people (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT,
+            work_status TEXT,
+            start_date TEXT,
+            job TEXT,
+            work_email TEXT,
+            team TEXT,
+            reports_to TEXT,
+            office TEXT,
+            salary_amount REAL,
+            salary_currency TEXT,
+            salary_type TEXT,
+            tenure TEXT,
+            country TEXT,
+            city TEXT,
+            first_name TEXT,
+            last_name TEXT,
+            date_of_birth TEXT,
+            gender TEXT,
+            contract_type TEXT
+        )
+    """)
+
+    if csv_newer:
+        _ingest(cursor)
+    else:
+        print("DB is up to date, skipping ingestion")
+
+    connection.commit()
+    connection.close()
