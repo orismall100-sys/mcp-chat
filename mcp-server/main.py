@@ -10,20 +10,34 @@ init_db()
 
 mcp = FastMCP(
     "people-server",
-    host=os.getenv("MCP_HOST", "127.0.0.1"),
+    host=os.getenv("MCP_HOST", "0.0.0.0"),
     port=int(os.getenv("MCP_PORT", 3001)),
 )
 
 
 @mcp.tool()
-def search_people(filters: dict) -> list[dict]:
+def search_people(
+    full_name: str = None,
+    job: str = None,
+    team: str = None,
+    office: str = None,
+    country: str = None,
+    city: str = None,
+    gender: str = None,
+    contract_type: str = None,
+    work_status: str = None,
+    reports_to: str = None,
+) -> list[dict]:
     """
-    Search people by any combination of fields.
-    Available filter keys: full_name, job, team, office, country, city, gender, contract_type, work_status, reports_to.
+    Search people by any combination of fields. All parameters are optional.
     Values use partial, case-insensitive matching.
-    Example: {"city": "London", "team": "Bread"}
+    Example: city="London", team="Bread"
     """
-    return tools.search_people(filters)
+    return tools.search_people(
+        full_name=full_name, job=job, team=team, office=office,
+        country=country, city=city, gender=gender, contract_type=contract_type,
+        work_status=work_status, reports_to=reports_to,
+    )
 
 
 @mcp.tool()

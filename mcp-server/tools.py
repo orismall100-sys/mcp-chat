@@ -7,21 +7,40 @@ def convert_rows_to_dicts(cursor: sqlite3.Cursor) -> list[dict]:
     return [dict(zip(column_names, raw_row)) for raw_row in cursor.fetchall()]
 
 
-def search_people(filters: dict) -> list[dict]:
+def search_people(
+    full_name: str = None,
+    job: str = None,
+    team: str = None,
+    office: str = None,
+    country: str = None,
+    city: str = None,
+    gender: str = None,
+    contract_type: str = None,
+    work_status: str = None,
+    reports_to: str = None,
+) -> list[dict]:
     """
     Search people by any combination of fields.
-    filters keys: full_name, job, team, office, country, city, gender, contract_type, work_status
-    Values are matched with LIKE (case-insensitive, partial match).
+    All parameters are optional and use partial, case-insensitive matching.
     """
-    allowed_filter_fields = {
-        "full_name", "job", "team", "office", "country",
-        "city", "gender", "contract_type", "work_status", "reports_to"
+    provided_filters = {
+        "full_name": full_name,
+        "job": job,
+        "team": team,
+        "office": office,
+        "country": country,
+        "city": city,
+        "gender": gender,
+        "contract_type": contract_type,
+        "work_status": work_status,
+        "reports_to": reports_to,
     }
+
     where_conditions = []
     query_params = []
 
-    for key, value in filters.items():
-        if key in allowed_filter_fields and value:
+    for key, value in provided_filters.items():
+        if value:
             where_conditions.append(f"{key} LIKE ?")
             query_params.append(f"%{value}%")
 
