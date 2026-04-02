@@ -44,7 +44,7 @@ def search_people(
             where_conditions.append(f"{key} LIKE ?")
             query_params.append(f"%{value}%")
 
-    sql_query = "SELECT * FROM people"
+    sql_query = "SELECT full_name, job, team, city, country, work_status, contract_type FROM people"
     if where_conditions:
         sql_query += " WHERE " + " AND ".join(where_conditions)
 
@@ -55,10 +55,10 @@ def search_people(
     return rows
 
 
-def get_person(name: str) -> dict | None:
+def get_person(person_name: str) -> dict | None:
     """Get a single person's full record by name (partial match)."""
     connection = get_db_connection()
-    cursor = connection.execute("SELECT * FROM people WHERE full_name LIKE ?", (f"%{name}%",))
+    cursor = connection.execute("SELECT * FROM people WHERE full_name LIKE ?", (f"%{person_name}%",))
     rows = convert_rows_to_dicts(cursor)
     connection.close()
     return rows[0] if rows else None
@@ -66,20 +66,28 @@ def get_person(name: str) -> dict | None:
 
 def get_statistics(group_by: str, metric: str) -> list[dict]:
     """
-    Get aggregate statistics.
-    group_by: any text column (city, team, country, gender, office, job, contract_type)
-    metric: "count" | "avg_salary"
+    Get aggregate statistics grouped by a field.
+    group_by options: city, team, country, gender, office, job, contract_type, work_status
+    metric options: count | avg_salary | max_salary | min_salary | total_salary
+    Example: group_by="team", metric="avg_salary" → average salary per team
     """
     allowed_group_by_fields = {"city", "team", "country", "gender", "office", "job", "contract_type", "work_status"}
     if group_by not in allowed_group_by_fields:
-        return [{"error": f"Invalid group_by field: {group_by}"}]
+        return [{"error": f"Invalid group_by field: {group_by}. Choose from: {', '.join(sorted(allowed_group_by_fields))}"}]
 
-    if metric == "count":
-        sql_query = f"SELECT {group_by}, COUNT(*) as count FROM people GROUP BY {group_by} ORDER BY count DESC"
-    elif metric == "avg_salary":
-        sql_query = f"SELECT {group_by}, ROUND(AVG(salary_amount), 2) as avg_salary FROM people GROUP BY {group_by} ORDER BY avg_salary DESC"
-    else:
-        return [{"error": f"Invalid metric: {metric}. Use 'count' or 'avg_salary'"}]
+    metric_expressions = {
+        "count":        ("COUNT(*)",                          "count"),
+        "avg_salary":   ("ROUND(AVG(salary_amount), 2)",      "avg_salary"),
+        "max_salary":   ("ROUND(MAX(salary_amount), 2)",      "max_salary"),
+        "min_salary":   ("ROUND(MIN(salary_amount), 2)",      "min_salary"),
+        "total_salary": ("ROUND(SUM(salary_amount), 2)",      "total_salary"),
+    }
+
+    if metric not in metric_expressions:
+        return [{"error": f"Invalid metric: {metric}. Choose from: {', '.join(metric_expressions.keys())}"}]
+
+    expr, alias = metric_expressions[metric]
+    sql_query = f"SELECT {group_by}, {expr} as {alias} FROM people GROUP BY {group_by} ORDER BY {alias} DESC"
 
     connection = get_db_connection()
     cursor = connection.execute(sql_query)
@@ -88,23 +96,23 @@ def get_statistics(group_by: str, metric: str) -> list[dict]:
     return rows
 
 
-def list_field_values(field: str) -> list[str]:
+def list_field_values(field_name: str) -> list[str]:
     """Get all distinct values for a given field."""
     allowed_fields = {
         "team", "office", "country", "city", "gender",
         "contract_type", "work_status", "job", "salary_currency"
     }
-    if field not in allowed_fields:
-        return [f"Invalid field: {field}"]
+    if field_name not in allowed_fields:
+        return [f"Invalid field: {field_name}"]
 
     connection = get_db_connection()
-    cursor = connection.execute(f"SELECT DISTINCT {field} FROM people ORDER BY {field}")
+    cursor = connection.execute(f"SELECT DISTINCT {field_name} FROM people ORDER BY {field_name}")
     rows = [row[0] for row in cursor.fetchall() if row[0]]
     connection.close()
     return rows
 
 
-def run_query(sql: str) -> list[dict] | dict:
+def run_query(sql_query: str) -> list[dict] | dict:
     """
     Execute a read-only SQL SELECT query against the people table.
     Use this for any question the other tools cannot answer.
@@ -113,13 +121,12 @@ def run_query(sql: str) -> list[dict] | dict:
     work_email, team, reports_to, office, salary_amount, salary_currency,
     salary_type, tenure, country, city, date_of_birth, gender, contract_type
     """
-    sql_stripped = sql.strip().upper()
-    if not sql_stripped.startswith("SELECT"):
+    if not sql_query.strip().upper().startswith("SELECT"):
         return {"error": "Only SELECT queries are allowed."}
 
     try:
         connection = get_db_connection()
-        cursor = connection.execute(sql, [])
+        cursor = connection.execute(sql_query, [])
         rows = convert_rows_to_dicts(cursor)
         connection.close()
         return rows

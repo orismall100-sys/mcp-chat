@@ -41,12 +41,12 @@ def search_people(
 
 
 @mcp.tool()
-def get_person(name: str) -> dict | None:
+def get_person(person_name: str) -> dict | None:
     """
     Get the full record of a single person by name (partial match).
-    Example: "Alaric"
+    Example: person_name="Alaric"
     """
-    return tools.get_person(name)
+    return tools.get_person(person_name)
 
 
 @mcp.tool()
@@ -54,24 +54,24 @@ def get_statistics(group_by: str, metric: str) -> list[dict]:
     """
     Get aggregate statistics grouped by a field.
     group_by options: city, team, country, gender, office, job, contract_type, work_status
-    metric options: "count" | "avg_salary"
-    Example: group_by="city", metric="count" → how many people per city
+    metric options: count | avg_salary | max_salary | min_salary | total_salary
+    Example: group_by="team", metric="avg_salary" → average salary per team
     """
     return tools.get_statistics(group_by, metric)
 
 
 @mcp.tool()
-def list_field_values(field: str) -> list[str]:
+def list_field_values(field_name: str) -> list[str]:
     """
     List all distinct values for a given field.
     Available fields: team, office, country, city, gender, contract_type, work_status, job, salary_currency
-    Example: field="team" → ["Bread", "Barista", "Marketing", ...]
+    Example: field_name="team" → ["Bread", "Barista", "Marketing", ...]
     """
-    return tools.list_field_values(field)
+    return tools.list_field_values(field_name)
 
 
 @mcp.tool()
-def run_query(sql: str) -> list[dict] | dict:
+def run_query(sql_query: str) -> list[dict] | dict:
     """
     Execute a read-only SQL SELECT query against the people table.
     Use this for any question the other tools cannot answer.
@@ -80,7 +80,7 @@ def run_query(sql: str) -> list[dict] | dict:
     work_email, team, reports_to, office, salary_amount, salary_currency,
     salary_type, tenure, country, city, date_of_birth, gender, contract_type
     """
-    return tools.run_query(sql)
+    return tools.run_query(sql_query)
 
 
 if __name__ == "__main__":
