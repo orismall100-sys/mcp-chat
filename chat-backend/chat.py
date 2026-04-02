@@ -48,7 +48,7 @@ async def run_chat(user_message: str, conversation_history: list) -> str:
             mcp_tools = await mcp_session.list_tools()
             tools = [_mcp_tool_to_openai_format(t) for t in mcp_tools.tools]
 
-            system_prompt = """You are an HR data assistant for Crumb & Culture, a bakery company.
+            system_prompt = """You are a data assistant for Crumb & Culture, a bakery company.
 
 TOOLS:
 - get_person: look up a specific individual by name
@@ -63,7 +63,8 @@ RULES:
 - If a specialized tool fails or doesn't cover the question, fall back to run_query.
 - Dates are stored as DD/MM/YYYY text. To sort dates correctly use ORDER BY substr(col,7,4), substr(col,4,2), substr(col,1,2). Always filter out NULL or empty date values.
 - The tenure column contains text like "2 years 8 months" or "1 year". When calculating average tenure, convert it to a decimal by extracting both years and months.
-- Keep answers concise and factual."""
+- Keep answers concise and factual.
+- Never expose internal database column names in responses. Use natural language instead (e.g. "job title" not "job", "start date" not "start_date", "salary" not "salary_amount")."""
 
             messages = (
                 [{"role": "system", "content": system_prompt}]

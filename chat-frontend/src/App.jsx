@@ -77,7 +77,7 @@ export default function App() {
           <span className="chat-logo">🍞</span>
           <div>
             <div className="chat-title">Crumb &amp; Culture</div>
-            <div className="chat-subtitle">HR Assistant</div>
+            <div className="chat-subtitle">Data Assistant</div>
           </div>
           <button className="dark-toggle" onClick={() => setDark(d => !d)}>
             {dark ? '☀️' : '🌙'}
@@ -96,7 +96,7 @@ export default function App() {
         {messages.map((msg, i) => (
           <div key={i} className={`message-row ${msg.role}`}>
             {msg.role === 'assistant' && (
-              <div className="message-avatar">C</div>
+              <div className="message-avatar">C&C</div>
             )}
             <div className="message-bubble">
               {msg.role === 'assistant'
@@ -109,7 +109,7 @@ export default function App() {
 
         {loading && (
           <div className="message-row assistant">
-            <div className="message-avatar">C</div>
+            <div className="message-avatar">C&C</div>
             <div className="message-bubble">
               <TypingDots />
             </div>
