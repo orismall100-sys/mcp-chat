@@ -1,19 +1,48 @@
 import { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import './App.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+function TypingDots() {
+  return (
+    <div className="typing-dots">
+      <span /><span /><span />
+    </div>
+  )
+}
 
 export default function App() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [dark, setDark] = useState(false)
   const bottomRef = useRef(null)
+  const textareaRef = useRef(null)
+
+  useEffect(() => {
+    document.body.classList.toggle('dark', dark)
+  }, [dark])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  async function sendMessage(e) {
-    e.preventDefault()
+  function handleInputChange(e) {
+    setInput(e.target.value)
+    const ta = textareaRef.current
+    ta.style.height = 'auto'
+    ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  async function sendMessage() {
     const text = input.trim()
     if (!text || loading) return
 
@@ -21,6 +50,7 @@ export default function App() {
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
     setInput('')
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setLoading(true)
 
     try {
@@ -41,61 +71,77 @@ export default function App() {
   }
 
   return (
-    <div className="container py-4" style={{ maxWidth: 720 }}>
-      <h4 className="mb-4">HR Assistant — Crumb &amp; Culture</h4>
+    <div className="chat-layout">
+      <header className="chat-header">
+        <div className="chat-header-inner">
+          <span className="chat-logo">🍞</span>
+          <div>
+            <div className="chat-title">Crumb &amp; Culture</div>
+            <div className="chat-subtitle">HR Assistant</div>
+          </div>
+          <button className="dark-toggle" onClick={() => setDark(d => !d)}>
+            {dark ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </header>
 
-      <div
-        className="border rounded p-3 mb-3 bg-light"
-        style={{ height: 500, overflowY: 'auto' }}
-      >
+      <main className="chat-messages">
         {messages.length === 0 && (
-          <p className="text-muted text-center mt-5">
-            Ask anything about the people data.
-          </p>
+          <div className="chat-empty">
+            <div className="chat-empty-icon">🍞</div>
+            <p>Ask anything about our people.</p>
+          </div>
         )}
 
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`d-flex mb-3 ${msg.role === 'user' ? 'justify-content-end' : 'justify-content-start'}`}
-          >
-            <div
-              className={`p-2 px-3 rounded-3 ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-white border'}`}
-              style={{ maxWidth: '80%', whiteSpace: 'pre-wrap' }}
-            >
-              {msg.content}
+          <div key={i} className={`message-row ${msg.role}`}>
+            {msg.role === 'assistant' && (
+              <div className="message-avatar">C</div>
+            )}
+            <div className="message-bubble">
+              {msg.role === 'assistant'
+                ? <ReactMarkdown>{msg.content}</ReactMarkdown>
+                : msg.content
+              }
             </div>
           </div>
         ))}
 
         {loading && (
-          <div className="d-flex justify-content-start mb-3">
-            <div className="p-2 px-3 rounded-3 bg-white border text-muted fst-italic">
-              Thinking...
+          <div className="message-row assistant">
+            <div className="message-avatar">C</div>
+            <div className="message-bubble">
+              <TypingDots />
             </div>
           </div>
         )}
 
         <div ref={bottomRef} />
-      </div>
+      </main>
 
-      <form onSubmit={sendMessage} className="d-flex gap-2">
-        <input
-          className="form-control"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Ask about employees..."
-          disabled={loading}
-          autoFocus
-        />
-        <button
-          className="btn btn-primary"
-          type="submit"
-          disabled={loading || !input.trim()}
-        >
-          Send
-        </button>
-      </form>
+      <footer className="chat-input-bar">
+        <div className="chat-input-inner">
+          <textarea
+            ref={textareaRef}
+            className="chat-textarea"
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about employees..."
+            disabled={loading}
+            rows={1}
+            autoFocus
+          />
+          <button
+            className="chat-send-btn"
+            onClick={sendMessage}
+            disabled={loading || !input.trim()}
+          >
+            ↑
+          </button>
+        </div>
+        <p className="chat-hint">Press Enter to send · Shift+Enter for new line</p>
+      </footer>
     </div>
   )
 }
