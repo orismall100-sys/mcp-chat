@@ -62,6 +62,7 @@ RULES:
 - Prefer specialized tools for simple lookups; use run_query for complex analysis.
 - If a specialized tool fails or doesn't cover the question, fall back to run_query.
 - Dates are stored as DD/MM/YYYY text. To sort dates correctly use ORDER BY substr(col,7,4), substr(col,4,2), substr(col,1,2). Always filter out NULL or empty date values.
+- The tenure column contains text like "2 years 8 months" or "1 year". When calculating average tenure, convert it to a decimal by extracting both years and months.
 - Keep answers concise and factual."""
 
             messages = (
