@@ -1,6 +1,6 @@
 import os
 import json
-from groq import AsyncGroq
+from openai import AsyncOpenAI
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 from dotenv import load_dotenv
@@ -8,30 +8,34 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:3001/mcp")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
 
-groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+gemini_client = AsyncOpenAI(
+    api_key=os.getenv("GEMINI_API_KEY"),
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    timeout=60.0,
+)
 
 
-def _clean_schema_for_groq(schema: dict) -> dict:
-    """Recursively remove JSON Schema fields that Groq does not support."""
+def _clean_schema(schema: dict) -> dict:
+    """Recursively remove JSON Schema fields unsupported by the Gemini OpenAI-compat endpoint."""
     unsupported_fields = {"additionalProperties", "$schema", "$defs", "definitions", "default", "title"}
     cleaned = {k: v for k, v in schema.items() if k not in unsupported_fields}
     if "properties" in cleaned:
         cleaned["properties"] = {
-            key: _clean_schema_for_groq(value)
+            key: _clean_schema(value)
             for key, value in cleaned["properties"].items()
         }
     return cleaned
 
 
-def _mcp_tool_to_groq_format(mcp_tool) -> dict:
+def _mcp_tool_to_openai_format(mcp_tool) -> dict:
     return {
         "type": "function",
         "function": {
             "name": mcp_tool.name,
             "description": mcp_tool.description or "",
-            "parameters": _clean_schema_for_groq(mcp_tool.inputSchema),
+            "parameters": _clean_schema(mcp_tool.inputSchema),
         },
     }
 
@@ -42,7 +46,7 @@ async def run_chat(user_message: str, conversation_history: list) -> str:
             await mcp_session.initialize()
 
             mcp_tools = await mcp_session.list_tools()
-            groq_tools = [_mcp_tool_to_groq_format(t) for t in mcp_tools.tools]
+            tools = [_mcp_tool_to_openai_format(t) for t in mcp_tools.tools]
 
             system_prompt = """You are an HR data assistant for Crumb & Culture, a bakery company.
 
@@ -57,21 +61,22 @@ RULES:
 - Always use a tool. Never guess or invent data.
 - Prefer specialized tools for simple lookups; use run_query for complex analysis.
 - If a specialized tool fails or doesn't cover the question, fall back to run_query.
-- Dates are YYYY-MM-DD. Use strftime('%Y','now') for age/tenure calculations.
+- Dates are stored as DD/MM/YYYY text. To sort dates correctly use ORDER BY substr(col,7,4), substr(col,4,2), substr(col,1,2). Always filter out NULL or empty date values.
 - Keep answers concise and factual."""
+
             messages = (
                 [{"role": "system", "content": system_prompt}]
                 + conversation_history
                 + [{"role": "user", "content": user_message}]
             )
 
-            # Agentic loop: Groq may call tools multiple times before giving a final answer
+            # Agentic loop: model may call tools multiple times before giving a final answer
             while True:
                 try:
-                    response = await groq_client.chat.completions.create(
-                        model=GROQ_MODEL,
+                    response = await gemini_client.chat.completions.create(
+                        model=GEMINI_MODEL,
                         messages=messages,
-                        tools=groq_tools,
+                        tools=tools,
                         tool_choice="auto",
                     )
                 except Exception as e:
@@ -82,24 +87,22 @@ RULES:
                 if not assistant_message.tool_calls:
                     return assistant_message.content or ""
 
-                # Add assistant's response (with tool calls) to message history
                 messages.append({
                     "role": "assistant",
                     "content": assistant_message.content,
                     "tool_calls": [
                         {
-                            "id": tool_call.id,
+                            "id": tc.id,
                             "type": "function",
                             "function": {
-                                "name": tool_call.function.name,
-                                "arguments": tool_call.function.arguments,
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
                             },
                         }
-                        for tool_call in assistant_message.tool_calls
+                        for tc in assistant_message.tool_calls
                     ],
                 })
 
-                # Execute each tool call against the MCP server and feed results back
                 for tool_call in assistant_message.tool_calls:
                     tool_name = tool_call.function.name
                     tool_args = json.loads(tool_call.function.arguments)

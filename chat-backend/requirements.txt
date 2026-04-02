@@ -1,5 +1,5 @@
 fastapi
 uvicorn
-groq
+openai
 mcp[cli]
 python-dotenv
