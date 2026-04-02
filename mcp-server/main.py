@@ -70,5 +70,18 @@ def list_field_values(field: str) -> list[str]:
     return tools.list_field_values(field)
 
 
+@mcp.tool()
+def run_query(sql: str) -> list[dict] | dict:
+    """
+    Execute a read-only SQL SELECT query against the people table.
+    Use this for any question the other tools cannot answer.
+    The table is called 'people' and has these columns:
+    id, full_name, first_name, last_name, work_status, start_date, job,
+    work_email, team, reports_to, office, salary_amount, salary_currency,
+    salary_type, tenure, country, city, date_of_birth, gender, contract_type
+    """
+    return tools.run_query(sql)
+
+
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")

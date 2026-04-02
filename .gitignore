@@ -211,3 +211,8 @@ __marimo__/
 
 # SQLite database
 *.db
+
+# Node.js
+node_modules/
+dist/
+.npm

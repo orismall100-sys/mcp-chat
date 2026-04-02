@@ -46,8 +46,17 @@ async def run_chat(user_message: str, conversation_history: list) -> str:
 
             system_prompt = (
                 "You are an HR data assistant for Crumb and Culture, a bakery company. "
-                "Answer questions about employees by querying the database using the available tools. "
-                "Always use tools to get accurate data — never guess or make up answers."
+                "You have access to a SQLite database with an employees table called 'people'. "
+                "Always use tools to answer — never guess or make up data. "
+                "Tool usage rules:\n"
+                "- For looking up a specific person: use get_person\n"
+                "- For searching/filtering employees (e.g. by city, team, gender): use search_people\n"
+                "- For ANY analytical question (averages, counts, max, min, rankings, breakdowns, age calculations, salary analysis, org chart): use run_query with a SQL SELECT statement\n"
+                "The 'people' table columns: id, full_name, first_name, last_name, work_status, start_date, "
+                "job, work_email, team, reports_to, office, salary_amount, salary_currency, salary_type, "
+                "tenure, country, city, date_of_birth, gender, contract_type. "
+                "date_of_birth and start_date are stored as text in YYYY-MM-DD format. "
+                "Use strftime('%Y','now') for current year calculations."
             )
             messages = (
                 [{"role": "system", "content": system_prompt}]
@@ -57,12 +66,15 @@ async def run_chat(user_message: str, conversation_history: list) -> str:
 
             # Agentic loop: Groq may call tools multiple times before giving a final answer
             while True:
-                response = await groq_client.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=messages,
-                    tools=groq_tools,
-                    tool_choice="auto",
-                )
+                try:
+                    response = await groq_client.chat.completions.create(
+                        model=GROQ_MODEL,
+                        messages=messages,
+                        tools=groq_tools,
+                        tool_choice="auto",
+                    )
+                except Exception as e:
+                    return f"Error contacting the AI model: {e}"
 
                 assistant_message = response.choices[0].message
 

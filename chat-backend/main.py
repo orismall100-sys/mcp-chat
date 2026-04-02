@@ -19,5 +19,8 @@ app.add_middleware(
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
-    response = await run_chat(request.message, request.history)
+    try:
+        response = await run_chat(request.message, request.history)
+    except Exception as e:
+        response = f"Error: {e}"
     return ChatResponse(response=response)

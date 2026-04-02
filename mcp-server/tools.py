@@ -102,3 +102,26 @@ def list_field_values(field: str) -> list[str]:
     rows = [row[0] for row in cursor.fetchall() if row[0]]
     connection.close()
     return rows
+
+
+def run_query(sql: str) -> list[dict] | dict:
+    """
+    Execute a read-only SQL SELECT query against the people table.
+    Use this for any question the other tools cannot answer.
+    The table is called 'people' and has these columns:
+    id, full_name, first_name, last_name, work_status, start_date, job,
+    work_email, team, reports_to, office, salary_amount, salary_currency,
+    salary_type, tenure, country, city, date_of_birth, gender, contract_type
+    """
+    sql_stripped = sql.strip().upper()
+    if not sql_stripped.startswith("SELECT"):
+        return {"error": "Only SELECT queries are allowed."}
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.execute(sql, [])
+        rows = convert_rows_to_dicts(cursor)
+        connection.close()
+        return rows
+    except Exception as e:
+        return {"error": str(e)}
