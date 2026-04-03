@@ -1,13 +1,16 @@
 import csv
 import sqlite3
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "people.db")
 CSV_PATH = os.path.join(os.path.dirname(__file__), "../data/people-list-export.csv")
 
 
 def get_db_connection():
-    return sqlite3.connect(DB_PATH)
+    return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
 
 
 def _ingest(cursor):
@@ -43,7 +46,7 @@ def _ingest(cursor):
                 row["Gender"],
                 row["Contract Type"],
             ))
-    print(f"DB ingested from {CSV_PATH}")
+    logger.info(f"DB ingested from {CSV_PATH}")
 
 
 def init_db():
@@ -81,7 +84,7 @@ def init_db():
     if csv_newer:
         _ingest(cursor)
     else:
-        print("DB is up to date, skipping ingestion")
+        logger.info("DB is up to date, skipping ingestion")
 
     connection.commit()
     connection.close()

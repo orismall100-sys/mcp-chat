@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from schemas import ChatRequest, ChatResponse
@@ -21,6 +21,6 @@ app.add_middleware(
 async def chat_endpoint(request: ChatRequest):
     try:
         response = await run_chat(request.message, request.history)
+        return ChatResponse(response=response)
     except Exception:
-        response = "Something went wrong. Please try again."
-    return ChatResponse(response=response)
+        raise HTTPException(status_code=500, detail="Something went wrong. Please try again.")

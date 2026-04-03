@@ -95,11 +95,14 @@ def get_statistics(group_by: str, metric: str) -> list[dict]:
     expr, alias = metric_expressions[metric]
     sql_query = f"SELECT {group_by}, {expr} as {alias} FROM people GROUP BY {group_by} ORDER BY {alias} DESC"
 
-    connection = get_db_connection()
-    cursor = connection.execute(sql_query)
-    rows = convert_rows_to_dicts(cursor)
-    connection.close()
-    return rows
+    try:
+        connection = get_db_connection()
+        cursor = connection.execute(sql_query)
+        rows = convert_rows_to_dicts(cursor)
+        connection.close()
+        return rows
+    except Exception as e:
+        return [{"error": str(e)}]
 
 
 def list_field_values(field_name: str) -> list[str]:
