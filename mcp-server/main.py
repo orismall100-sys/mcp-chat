@@ -33,7 +33,6 @@ def search_people(
     """
     Search people by any combination of fields. All parameters are optional.
     Values use partial, case-insensitive matching.
-    Example: city="London", team="Bread"
     """
     return tools.search_people(
         full_name=full_name, job=job, team=team, office=office,
@@ -46,7 +45,6 @@ def search_people(
 def get_person(person_name: str) -> dict | None:
     """
     Get the full record of a single person by name (partial match).
-    Example: person_name="Alaric"
     """
     return tools.get_person(person_name)
 
@@ -55,9 +53,8 @@ def get_person(person_name: str) -> dict | None:
 def get_statistics(group_by: str, metric: str) -> list[dict]:
     """
     Get aggregate statistics grouped by a field.
-    group_by options: city, team, country, gender, office, job, contract_type, work_status
-    metric options: count | avg_salary | max_salary | min_salary | total_salary
-    Example: group_by="team", metric="avg_salary" → average salary per team
+    group_by options: city, team, country, gender, office, job, contract_type, work_status.
+    metric options: count | avg_salary | max_salary | min_salary | total_salary.
     """
     return tools.get_statistics(group_by, metric)
 
@@ -66,8 +63,7 @@ def get_statistics(group_by: str, metric: str) -> list[dict]:
 def list_field_values(field_name: str) -> list[str]:
     """
     List all distinct values for a given field.
-    Available fields: team, office, country, city, gender, contract_type, work_status, job, salary_currency
-    Example: field_name="team" → ["Bread", "Barista", "Marketing", ...]
+    Available fields: team, office, country, city, gender, contract_type, work_status, job, salary_currency.
     """
     return tools.list_field_values(field_name)
 
@@ -77,10 +73,6 @@ def run_query(sql_query: str) -> list[dict] | dict:
     """
     Execute a read-only SQL SELECT query against the people table.
     Use this for any question the other tools cannot answer.
-    The table is called 'people' and has these columns:
-    id, full_name, first_name, last_name, work_status, start_date, job,
-    work_email, team, reports_to, office, salary_amount, salary_currency,
-    salary_type, tenure, country, city, date_of_birth, gender, contract_type
     """
     return tools.run_query(sql_query)
 

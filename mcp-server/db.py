@@ -10,7 +10,7 @@ CSV_PATH = os.path.join(os.path.dirname(__file__), "../data/people-list-export.c
 
 
 def get_db_connection() -> sqlite3.Connection:
-    """Read-only connection to the SQLite database."""
+    """Connection to the SQLite database."""
     return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
 
 
@@ -56,7 +56,6 @@ def init_db() -> None:
     db_exists = os.path.exists(DB_PATH)
     csv_newer = not db_exists or os.path.getmtime(CSV_PATH) > os.path.getmtime(DB_PATH)
 
-    # Writable connection — get_db_connection() is read-only and used only by tools
     connection = sqlite3.connect(DB_PATH)
     cursor = connection.cursor()
 

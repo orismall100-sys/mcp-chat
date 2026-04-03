@@ -10,6 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY mcp-server/ .
 COPY data/ /data/
 
-EXPOSE 3001
-
 CMD ["python3", "main.py"]
