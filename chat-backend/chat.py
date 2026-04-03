@@ -98,14 +98,14 @@ RULES:
                     "content": assistant_message.content,
                     "tool_calls": [
                         {
-                            "id": tc.id,
+                            "id": tool_call_item.id,
                             "type": "function",
                             "function": {
-                                "name": tc.function.name,
-                                "arguments": tc.function.arguments,
+                                "name": tool_call_item.function.name,
+                                "arguments": tool_call_item.function.arguments,
                             },
                         }
-                        for tc in assistant_message.tool_calls
+                        for tool_call_item in assistant_message.tool_calls
                     ],
                 })
 
