@@ -11,7 +11,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("CORS_ORIGIN", "http://localhost:5173")],
+    allow_origins=[os.environ["CORS_ORIGIN"]],
     allow_methods=["POST"],
     allow_headers=["Content-Type"],
 )
@@ -21,6 +21,6 @@ app.add_middleware(
 async def chat_endpoint(request: ChatRequest):
     try:
         response = await run_chat(request.message, request.history)
-    except Exception as e:
-        response = f"Error: {e}"
+    except Exception:
+        response = "Something went wrong. Please try again."
     return ChatResponse(response=response)

@@ -48,20 +48,26 @@ def search_people(
     if where_conditions:
         sql_query += " WHERE " + " AND ".join(where_conditions)
 
-    connection = get_db_connection()
-    cursor = connection.execute(sql_query, query_params)
-    rows = convert_rows_to_dicts(cursor)
-    connection.close()
-    return rows
+    try:
+        connection = get_db_connection()
+        cursor = connection.execute(sql_query, query_params)
+        rows = convert_rows_to_dicts(cursor)
+        connection.close()
+        return rows
+    except Exception as e:
+        return [{"error": str(e)}]
 
 
 def get_person(person_name: str) -> dict | None:
     """Get a single person's full record by name (partial match)."""
-    connection = get_db_connection()
-    cursor = connection.execute("SELECT * FROM people WHERE full_name LIKE ?", (f"%{person_name}%",))
-    rows = convert_rows_to_dicts(cursor)
-    connection.close()
-    return rows[0] if rows else None
+    try:
+        connection = get_db_connection()
+        cursor = connection.execute("SELECT * FROM people WHERE full_name LIKE ?", (f"%{person_name}%",))
+        rows = convert_rows_to_dicts(cursor)
+        connection.close()
+        return rows[0] if rows else None
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def get_statistics(group_by: str, metric: str) -> list[dict]:
@@ -105,11 +111,14 @@ def list_field_values(field_name: str) -> list[str]:
     if field_name not in allowed_fields:
         return [f"Invalid field: {field_name}"]
 
-    connection = get_db_connection()
-    cursor = connection.execute(f"SELECT DISTINCT {field_name} FROM people ORDER BY {field_name}")
-    rows = [row[0] for row in cursor.fetchall() if row[0]]
-    connection.close()
-    return rows
+    try:
+        connection = get_db_connection()
+        cursor = connection.execute(f"SELECT DISTINCT {field_name} FROM people ORDER BY {field_name}")
+        rows = [row[0] for row in cursor.fetchall() if row[0]]
+        connection.close()
+        return rows
+    except Exception as e:
+        return [str(e)]
 
 
 def run_query(sql_query: str) -> list[dict] | dict:

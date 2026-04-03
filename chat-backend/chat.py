@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:3001/mcp")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
+MCP_SERVER_URL = os.environ["MCP_SERVER_URL"]
+GEMINI_MODEL = os.environ["GEMINI_MODEL"]
 
 gemini_client = AsyncOpenAI(
-    api_key=os.getenv("GEMINI_API_KEY"),
+    api_key=os.environ["GEMINI_API_KEY"],
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
     timeout=60.0,
 )
@@ -107,12 +107,15 @@ RULES:
 
                 for tool_call in assistant_message.tool_calls:
                     tool_name = tool_call.function.name
-                    tool_args = json.loads(tool_call.function.arguments)
-                    tool_result = await mcp_session.call_tool(tool_name, tool_args)
-                    serialized_result = [
-                        item.text if hasattr(item, "text") else str(item)
-                        for item in tool_result.content
-                    ]
+                    try:
+                        tool_args = json.loads(tool_call.function.arguments)
+                        tool_result = await mcp_session.call_tool(tool_name, tool_args)
+                        serialized_result = [
+                            item.text if hasattr(item, "text") else str(item)
+                            for item in tool_result.content
+                        ]
+                    except Exception as e:
+                        serialized_result = [f"Tool error: {e}"]
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
