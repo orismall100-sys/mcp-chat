@@ -55,18 +55,6 @@ The chat backend acts as an MCP client — on each user message it connects to t
 
 4. Open [http://localhost](http://localhost) in your browser.
 
-### Environment Variables
-
-**`chat-backend/.env`**
-```
-GEMINI_API_KEY=your_key_here
-GEMINI_MODEL=models/gemini-2.5-flash
-MCP_SERVER_URL=http://mcp-server:3001/mcp
-CORS_ORIGIN=http://localhost
-```
-
-> `MCP_SERVER_URL` and `CORS_ORIGIN` are overridden by `docker-compose.yml` at runtime — no need to change them.
-
 ---
 
 ## Project Structure
