@@ -42,11 +42,11 @@ The chat backend acts as an MCP client — on each user message it connects to t
    cd mcp-chat
    ```
 
-2. Configure the chat backend environment:
+2. Configure environment variables:
    ```bash
-   cp chat-backend/.env.example chat-backend/.env
+   cp .env.example .env
    ```
-   Fill in your `GEMINI_API_KEY` in `chat-backend/.env`.
+   Fill in your `GEMINI_API_KEY` in `.env`.
 
 3. Build and run:
    ```bash
@@ -64,6 +64,8 @@ mcp-chat/
 ├── data/
 │   └── people-list-export.csv     # Source data
 ├── docker-compose.yml             # Orchestration
+├── .env                           # Environment variables (not committed)
+├── .env.example                   # Template — copy to .env and fill in values
 ├── mcp-server/
 │   ├── main.py                    # Tool registration (FastMCP)
 │   ├── tools.py                   # Tool implementations
