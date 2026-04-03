@@ -10,6 +10,7 @@ load_dotenv()
 MCP_SERVER_URL = os.environ["MCP_SERVER_URL"]
 GEMINI_MODEL = os.environ["GEMINI_MODEL"]
 
+# Communicate with Gemini via OpenAI-compatible endpoint
 gemini_client = AsyncOpenAI(
     api_key=os.environ["GEMINI_API_KEY"],
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -20,7 +21,7 @@ gemini_client = AsyncOpenAI(
 def _clean_schema(schema: dict) -> dict:
     """Recursively remove JSON Schema fields unsupported by the Gemini OpenAI-compat endpoint."""
     unsupported_fields = {"additionalProperties", "$schema", "$defs", "definitions", "default", "title"}
-    cleaned = {k: v for k, v in schema.items() if k not in unsupported_fields}
+    cleaned = {field: value for field, value in schema.items() if field not in unsupported_fields}
     if "properties" in cleaned:
         cleaned["properties"] = {
             key: _clean_schema(value)
@@ -30,6 +31,7 @@ def _clean_schema(schema: dict) -> dict:
 
 
 def _mcp_tool_to_openai_format(mcp_tool) -> dict:
+    """Convert an MCP tool definition to the OpenAI function-calling format."""
     return {
         "type": "function",
         "function": {
@@ -40,13 +42,14 @@ def _mcp_tool_to_openai_format(mcp_tool) -> dict:
     }
 
 
-async def run_chat(user_message: str, conversation_history: list) -> str:
+async def run_chat(user_message: str, conversation_history: list[dict]) -> str:
+    """Run the agentic loop — calls Gemini repeatedly until it returns a text response."""
     async with streamablehttp_client(MCP_SERVER_URL) as (read_stream, write_stream, _):
         async with ClientSession(read_stream, write_stream) as mcp_session:
             await mcp_session.initialize()
 
             mcp_tools = await mcp_session.list_tools()
-            tools = [_mcp_tool_to_openai_format(t) for t in mcp_tools.tools]
+            tools = [_mcp_tool_to_openai_format(tool) for tool in mcp_tools.tools]
 
             system_prompt = """You are a data assistant for Crumb & Culture, a bakery company.
 
@@ -66,6 +69,7 @@ RULES:
 - Keep answers concise and factual.
 - Never expose internal database column names in responses. Use natural language instead (e.g. "job title" not "job", "start date" not "start_date", "salary" not "salary_amount")."""
 
+            # System prompt + full history + new user message
             messages = (
                 [{"role": "system", "content": system_prompt}]
                 + conversation_history

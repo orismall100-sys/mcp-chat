@@ -8,16 +8,16 @@ def convert_rows_to_dicts(cursor: sqlite3.Cursor) -> list[dict]:
 
 
 def search_people(
-    full_name: str = None,
-    job: str = None,
-    team: str = None,
-    office: str = None,
-    country: str = None,
-    city: str = None,
-    gender: str = None,
-    contract_type: str = None,
-    work_status: str = None,
-    reports_to: str = None,
+    full_name: str | None = None,
+    job: str | None = None,
+    team: str | None = None,
+    office: str | None = None,
+    country: str | None = None,
+    city: str | None = None,
+    gender: str | None = None,
+    contract_type: str | None = None,
+    work_status: str | None = None,
+    reports_to: str | None = None,
 ) -> list[dict]:
     """
     Search people by any combination of fields.

@@ -1,9 +1,11 @@
 import os
+import logging
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 from db import init_db
 import tools
 
+logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
 init_db()
