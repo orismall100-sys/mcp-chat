@@ -45,7 +45,7 @@ export default function App() {
     const text = input.trim()
     if (!text || loading) return
 
-    const userMessage = { role: 'user', content: text }
+    const userMessage = { role: 'user', content: text, id: Date.now() }
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput('')
@@ -55,9 +55,9 @@ export default function App() {
     try {
       const history = messages.map(message => ({ role: message.role, content: message.content }))
       const response = await sendChatMessage(text, history)
-      setMessages([...newMessages, { role: 'assistant', content: response }])
+      setMessages([...newMessages, { role: 'assistant', content: response, id: Date.now() }])
     } catch (err) {
-      setMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}` }])
+      setMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}`, id: Date.now() }])
     } finally {
       setLoading(false)
     }
@@ -86,8 +86,8 @@ export default function App() {
           </div>
         )}
 
-        {messages.map((message, index) => (
-          <div key={index} className={`message-row ${message.role}`}>
+        {messages.map((message) => (
+          <div key={message.id} className={`message-row ${message.role}`}>
             {message.role === 'assistant' && (
               <div className="message-avatar">C&C</div>
             )}

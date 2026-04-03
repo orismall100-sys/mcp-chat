@@ -2,12 +2,12 @@ import os
 import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from schemas import ChatRequest, ChatResponse
 from chat import run_chat
 
 logging.basicConfig(level=logging.INFO)
-load_dotenv()
+load_dotenv(find_dotenv())
 
 app = FastAPI()
 

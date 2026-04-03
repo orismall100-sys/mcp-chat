@@ -12,8 +12,8 @@ init_db()
 
 mcp = FastMCP(
     "people-server",
-    host=os.getenv("MCP_HOST", "0.0.0.0"),
-    port=int(os.getenv("MCP_PORT", 3001)),
+    host=os.environ["MCP_HOST"],
+    port=int(os.environ["MCP_PORT"]),
 )
 
 
