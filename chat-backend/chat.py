@@ -21,13 +21,13 @@ gemini_client = AsyncOpenAI(
 def _clean_schema(schema: dict) -> dict:
     """Recursively remove JSON Schema fields unsupported by the Gemini OpenAI-compat endpoint."""
     unsupported_fields = {"additionalProperties", "$schema", "$defs", "definitions", "default", "title"}
-    cleaned = {field: value for field, value in schema.items() if field not in unsupported_fields}
-    if "properties" in cleaned:
-        cleaned["properties"] = {
+    cleaned_schema = {field: value for field, value in schema.items() if field not in unsupported_fields}
+    if "properties" in cleaned_schema:
+        cleaned_schema["properties"] = {
             key: _clean_schema(value)
-            for key, value in cleaned["properties"].items()
+            for key, value in cleaned_schema["properties"].items()
         }
-    return cleaned
+    return cleaned_schema
 
 
 def _mcp_tool_to_openai_format(mcp_tool) -> dict:
@@ -39,6 +39,25 @@ def _mcp_tool_to_openai_format(mcp_tool) -> dict:
             "description": mcp_tool.description or "",
             "parameters": _clean_schema(mcp_tool.inputSchema),
         },
+    }
+
+
+async def _execute_tool_call(mcp_session: ClientSession, tool_call) -> dict:
+    """Call one MCP tool and return a role:tool message ready to append to messages."""
+    tool_name = tool_call.function.name
+    try:
+        tool_args = json.loads(tool_call.function.arguments)
+        tool_result = await mcp_session.call_tool(tool_name, tool_args)
+        serialized_result = [
+            item.text if hasattr(item, "text") else str(item)
+            for item in tool_result.content
+        ]
+    except Exception as e:
+        serialized_result = [f"Tool error: {e}"]
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "content": json.dumps(serialized_result),
     }
 
 
@@ -78,6 +97,7 @@ RULES:
 
             # Agentic loop: model may call tools multiple times before giving a final answer
             while True:
+                # 1. Ask the model
                 try:
                     response = await gemini_client.chat.completions.create(
                         model=GEMINI_MODEL,
@@ -90,9 +110,11 @@ RULES:
 
                 assistant_message = response.choices[0].message
 
+                # 2. No tool calls → final answer
                 if not assistant_message.tool_calls:
                     return assistant_message.content or ""
 
+                # 3. Execute tools and feed results back
                 messages.append({
                     "role": "assistant",
                     "content": assistant_message.content,
@@ -110,18 +132,4 @@ RULES:
                 })
 
                 for tool_call in assistant_message.tool_calls:
-                    tool_name = tool_call.function.name
-                    try:
-                        tool_args = json.loads(tool_call.function.arguments)
-                        tool_result = await mcp_session.call_tool(tool_name, tool_args)
-                        serialized_result = [
-                            item.text if hasattr(item, "text") else str(item)
-                            for item in tool_result.content
-                        ]
-                    except Exception as e:
-                        serialized_result = [f"Tool error: {e}"]
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": json.dumps(serialized_result),
-                    })
+                    messages.append(await _execute_tool_call(mcp_session, tool_call))
