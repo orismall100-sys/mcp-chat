@@ -3,13 +3,14 @@ import json
 from openai import AsyncOpenAI
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
+load_dotenv(find_dotenv())
 
 MCP_SERVER_URL = os.environ["MCP_SERVER_URL"]
 GEMINI_MODEL = os.environ["GEMINI_MODEL"]
 
+# Communicate with Gemini via OpenAI-compatible endpoint
 gemini_client = AsyncOpenAI(
     api_key=os.environ["GEMINI_API_KEY"],
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -20,16 +21,17 @@ gemini_client = AsyncOpenAI(
 def _clean_schema(schema: dict) -> dict:
     """Recursively remove JSON Schema fields unsupported by the Gemini OpenAI-compat endpoint."""
     unsupported_fields = {"additionalProperties", "$schema", "$defs", "definitions", "default", "title"}
-    cleaned = {k: v for k, v in schema.items() if k not in unsupported_fields}
-    if "properties" in cleaned:
-        cleaned["properties"] = {
+    cleaned_schema = {field: value for field, value in schema.items() if field not in unsupported_fields}
+    if "properties" in cleaned_schema:
+        cleaned_schema["properties"] = {
             key: _clean_schema(value)
-            for key, value in cleaned["properties"].items()
+            for key, value in cleaned_schema["properties"].items()
         }
-    return cleaned
+    return cleaned_schema
 
 
 def _mcp_tool_to_openai_format(mcp_tool) -> dict:
+    """Convert an MCP tool definition to the OpenAI function-calling format."""
     return {
         "type": "function",
         "function": {
@@ -40,13 +42,33 @@ def _mcp_tool_to_openai_format(mcp_tool) -> dict:
     }
 
 
-async def run_chat(user_message: str, conversation_history: list) -> str:
+async def _execute_tool_call(mcp_session: ClientSession, tool_call) -> dict:
+    """Call one MCP tool and return a role:tool message ready to append to messages."""
+    tool_name = tool_call.function.name
+    try:
+        tool_args = json.loads(tool_call.function.arguments)
+        tool_result = await mcp_session.call_tool(tool_name, tool_args)
+        serialized_result = [
+            item.text if hasattr(item, "text") else str(item)
+            for item in tool_result.content
+        ]
+    except Exception as e:
+        serialized_result = [f"Tool error: {e}"]
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "content": json.dumps(serialized_result),
+    }
+
+
+async def run_chat(user_message: str, conversation_history: list[dict]) -> str:
+    """Run the agentic loop — calls Gemini repeatedly until it returns a text response."""
     async with streamablehttp_client(MCP_SERVER_URL) as (read_stream, write_stream, _):
         async with ClientSession(read_stream, write_stream) as mcp_session:
             await mcp_session.initialize()
 
             mcp_tools = await mcp_session.list_tools()
-            tools = [_mcp_tool_to_openai_format(t) for t in mcp_tools.tools]
+            tools = [_mcp_tool_to_openai_format(tool) for tool in mcp_tools.tools]
 
             system_prompt = """You are a data assistant for Crumb & Culture, a bakery company.
 
@@ -63,9 +85,11 @@ RULES:
 - If a specialized tool fails or doesn't cover the question, fall back to run_query.
 - Dates are stored as DD/MM/YYYY text. To sort dates correctly use ORDER BY substr(col,7,4), substr(col,4,2), substr(col,1,2). Always filter out NULL or empty date values.
 - The tenure column contains text like "2 years 8 months" or "1 year". When calculating average tenure, convert it to a decimal by extracting both years and months.
+- Never ask the user for information. If you need data like a birth date or age, query it yourself using run_query.
 - Keep answers concise and factual.
 - Never expose internal database column names in responses. Use natural language instead (e.g. "job title" not "job", "start date" not "start_date", "salary" not "salary_amount")."""
 
+            # System prompt + full history + new user message
             messages = (
                 [{"role": "system", "content": system_prompt}]
                 + conversation_history
@@ -74,6 +98,7 @@ RULES:
 
             # Agentic loop: model may call tools multiple times before giving a final answer
             while True:
+                # 1. Ask the model
                 try:
                     response = await gemini_client.chat.completions.create(
                         model=GEMINI_MODEL,
@@ -86,38 +111,26 @@ RULES:
 
                 assistant_message = response.choices[0].message
 
+                # 2. No tool calls → final answer
                 if not assistant_message.tool_calls:
                     return assistant_message.content or ""
 
+                # 3. Execute tools and feed results back
                 messages.append({
                     "role": "assistant",
                     "content": assistant_message.content,
                     "tool_calls": [
                         {
-                            "id": tc.id,
+                            "id": tool_call_item.id,
                             "type": "function",
                             "function": {
-                                "name": tc.function.name,
-                                "arguments": tc.function.arguments,
+                                "name": tool_call_item.function.name,
+                                "arguments": tool_call_item.function.arguments,
                             },
                         }
-                        for tc in assistant_message.tool_calls
+                        for tool_call_item in assistant_message.tool_calls
                     ],
                 })
 
                 for tool_call in assistant_message.tool_calls:
-                    tool_name = tool_call.function.name
-                    try:
-                        tool_args = json.loads(tool_call.function.arguments)
-                        tool_result = await mcp_session.call_tool(tool_name, tool_args)
-                        serialized_result = [
-                            item.text if hasattr(item, "text") else str(item)
-                            for item in tool_result.content
-                        ]
-                    except Exception as e:
-                        serialized_result = [f"Tool error: {e}"]
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": json.dumps(serialized_result),
-                    })
+                    messages.append(await _execute_tool_call(mcp_session, tool_call))

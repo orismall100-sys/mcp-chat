@@ -29,9 +29,9 @@ export default function App() {
 
   function handleInputChange(e) {
     setInput(e.target.value)
-    const ta = textareaRef.current
-    ta.style.height = 'auto'
-    ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'
+    const textArea = textareaRef.current
+    textArea.style.height = 'auto'
+    textArea.style.height = Math.min(textArea.scrollHeight, 160) + 'px'
   }
 
   function handleKeyDown(e) {
@@ -45,19 +45,19 @@ export default function App() {
     const text = input.trim()
     if (!text || loading) return
 
-    const userMsg = { role: 'user', content: text }
-    const newMessages = [...messages, userMsg]
+    const userMessage = { role: 'user', content: text, id: Date.now() }
+    const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setLoading(true)
 
     try {
-      const history = messages.map(m => ({ role: m.role, content: m.content }))
+      const history = messages.map(message => ({ role: message.role, content: message.content }))
       const response = await sendChatMessage(text, history)
-      setMessages([...newMessages, { role: 'assistant', content: response }])
+      setMessages([...newMessages, { role: 'assistant', content: response, id: Date.now() }])
     } catch (err) {
-      setMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}` }])
+      setMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}`, id: Date.now() }])
     } finally {
       setLoading(false)
     }
@@ -72,7 +72,7 @@ export default function App() {
             <div className="chat-title">Crumb &amp; Culture</div>
             <div className="chat-subtitle">Data Assistant</div>
           </div>
-          <button className="dark-toggle" onClick={() => setDark(d => !d)}>
+          <button className="dark-toggle" onClick={() => setDark(dark => !dark)}>
             {dark ? '☀️' : '🌙'}
           </button>
         </div>
@@ -86,15 +86,15 @@ export default function App() {
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div key={i} className={`message-row ${msg.role}`}>
-            {msg.role === 'assistant' && (
+        {messages.map((message) => (
+          <div key={message.id} className={`message-row ${message.role}`}>
+            {message.role === 'assistant' && (
               <div className="message-avatar">C&C</div>
             )}
             <div className="message-bubble">
-              {msg.role === 'assistant'
-                ? <ReactMarkdown>{msg.content}</ReactMarkdown>
-                : msg.content
+              {message.role === 'assistant'
+                ? <ReactMarkdown>{message.content}</ReactMarkdown>
+                : message.content
               }
             </div>
           </div>

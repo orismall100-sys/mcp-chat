@@ -1,3 +1,4 @@
+/* Reset browser defaults and use border-box sizing across all elements */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -41,7 +42,9 @@ body.dark .chat-header {
   margin: 0 auto;
 }
 
-.chat-logo { font-size: 28px; }
+.chat-logo { 
+  font-size: 28px; 
+}
 
 .chat-title {
   font-size: 16px;
@@ -49,7 +52,9 @@ body.dark .chat-header {
   color: #1a1a1a;
 }
 
-body.dark .chat-title { color: #e8e3dc; }
+body.dark .chat-title { 
+  color: #e8e3dc; 
+}
 
 .chat-subtitle {
   font-size: 12px;
@@ -68,9 +73,17 @@ body.dark .chat-title { color: #e8e3dc; }
   transition: background 0.15s;
 }
 
-body.dark .dark-toggle { border-color: #3a3730; }
-.dark-toggle:hover { background: #f0ece6; }
-body.dark .dark-toggle:hover { background: #2e2b26; }
+body.dark .dark-toggle { 
+  border-color: #3a3730; 
+}
+
+.dark-toggle:hover { 
+  background: #f0ece6; 
+}
+
+body.dark .dark-toggle:hover { 
+  background: #2e2b26; 
+}
 
 /* Messages */
 .chat-messages {
@@ -88,8 +101,13 @@ body.dark .dark-toggle:hover { background: #2e2b26; }
   color: #a09488;
 }
 
-.chat-empty-icon { font-size: 48px; margin-bottom: 12px; }
-.chat-empty p { font-size: 16px; }
+.chat-empty-icon { 
+  font-size: 48px; margin-bottom: 12px; 
+}
+
+.chat-empty p { 
+  font-size: 16px; 
+}
 
 /* Message rows */
 .message-row {
@@ -100,7 +118,9 @@ body.dark .dark-toggle:hover { background: #2e2b26; }
   margin: 0 auto;
 }
 
-.message-row.user { flex-direction: row-reverse; }
+.message-row.user { 
+  flex-direction: row-reverse; 
+}
 
 /* Avatar */
 .message-avatar {
@@ -152,14 +172,28 @@ body.dark .message-row.assistant .message-bubble {
 }
 
 /* Markdown */
-.message-row.assistant .message-bubble p { margin-bottom: 8px; }
-.message-row.assistant .message-bubble p:last-child { margin-bottom: 0; }
+.message-row.assistant .message-bubble p { 
+  margin-bottom: 8px; 
+}
+.message-row.assistant .message-bubble p:last-child { 
+  margin-bottom: 0; 
+}
 .message-row.assistant .message-bubble ul,
-.message-row.assistant .message-bubble ol { padding-left: 20px; margin-bottom: 8px; }
-.message-row.assistant .message-bubble li { margin-bottom: 4px; }
-.message-row.assistant .message-bubble strong { font-weight: 600; }
+
+.message-row.assistant .message-bubble ol { 
+  padding-left: 20px; 
+  margin-bottom: 8px; 
+}
+.message-row.assistant .message-bubble li { 
+  margin-bottom: 4px; 
+}
+.message-row.assistant .message-bubble strong { 
+  font-weight: 600; 
+}
 .message-row.assistant .message-bubble h1,
+
 .message-row.assistant .message-bubble h2,
+
 .message-row.assistant .message-bubble h3 {
   font-size: 15px;
   font-weight: 600;
@@ -182,12 +216,23 @@ body.dark .message-row.assistant .message-bubble {
   animation: dot-bounce 1.2s infinite ease-in-out;
 }
 
-.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+.typing-dots span:nth-child(2) { 
+  animation-delay: 0.2s; 
+}
+
+.typing-dots span:nth-child(3) { 
+  animation-delay: 0.4s; 
+}
 
 @keyframes dot-bounce {
-  0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
-  40% { transform: translateY(-6px); opacity: 1; }
+  0%, 80%, 100% { 
+    transform: translateY(0); 
+    opacity: 0.5; 
+  }
+  40% { 
+    transform: translateY(-6px); 
+    opacity: 1; 
+  }
 }
 
 /* Input bar */
@@ -234,9 +279,17 @@ body.dark .chat-input-inner {
   overflow-y: auto;
 }
 
-body.dark .chat-textarea { color: #e8e3dc; }
-.chat-textarea::placeholder { color: #a09488; }
-.chat-textarea:disabled { opacity: 0.6; }
+body.dark .chat-textarea { 
+  color: #e8e3dc; 
+}
+
+.chat-textarea::placeholder { 
+  color: #a09488; 
+}
+
+.chat-textarea:disabled { 
+  opacity: 0.6; 
+}
 
 .chat-send-btn {
   width: 34px;
@@ -254,8 +307,14 @@ body.dark .chat-textarea { color: #e8e3dc; }
   transition: background 0.15s, opacity 0.15s;
 }
 
-.chat-send-btn:hover:not(:disabled) { background: #4a3a2c; }
-.chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-send-btn:hover:not(:disabled) { 
+  background: #4a3a2c; 
+}
+
+.chat-send-btn:disabled { 
+  opacity: 0.4; 
+  cursor: not-allowed; 
+}
 
 .chat-hint {
   text-align: center;

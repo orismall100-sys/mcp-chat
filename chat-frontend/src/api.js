@@ -6,7 +6,7 @@ export async function sendChatMessage(message, history) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, history }),
   })
-  if (!res.ok) throw new Error(`Server error: ${res.status}`)
+  if (!res.ok) throw new Error('Something went wrong. Please try again.')
   const data = await res.json()
   return data.response
 }

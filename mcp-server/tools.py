@@ -8,16 +8,16 @@ def convert_rows_to_dicts(cursor: sqlite3.Cursor) -> list[dict]:
 
 
 def search_people(
-    full_name: str = None,
-    job: str = None,
-    team: str = None,
-    office: str = None,
-    country: str = None,
-    city: str = None,
-    gender: str = None,
-    contract_type: str = None,
-    work_status: str = None,
-    reports_to: str = None,
+    full_name: str | None = None,
+    job: str | None = None,
+    team: str | None = None,
+    office: str | None = None,
+    country: str | None = None,
+    city: str | None = None,
+    gender: str | None = None,
+    contract_type: str | None = None,
+    work_status: str | None = None,
+    reports_to: str | None = None,
 ) -> list[dict]:
     """
     Search people by any combination of fields.
@@ -48,26 +48,31 @@ def search_people(
     if where_conditions:
         sql_query += " WHERE " + " AND ".join(where_conditions)
 
+    connection = None
     try:
         connection = get_db_connection()
         cursor = connection.execute(sql_query, query_params)
-        rows = convert_rows_to_dicts(cursor)
-        connection.close()
-        return rows
+        return convert_rows_to_dicts(cursor)
     except Exception as e:
         return [{"error": str(e)}]
+    finally:
+        if connection:
+            connection.close()
 
 
 def get_person(person_name: str) -> dict | None:
     """Get a single person's full record by name (partial match)."""
+    connection = None
     try:
         connection = get_db_connection()
         cursor = connection.execute("SELECT * FROM people WHERE full_name LIKE ?", (f"%{person_name}%",))
         rows = convert_rows_to_dicts(cursor)
-        connection.close()
         return rows[0] if rows else None
     except Exception as e:
         return {"error": str(e)}
+    finally:
+        if connection:
+            connection.close()
 
 
 def get_statistics(group_by: str, metric: str) -> list[dict]:
@@ -95,11 +100,16 @@ def get_statistics(group_by: str, metric: str) -> list[dict]:
     expr, alias = metric_expressions[metric]
     sql_query = f"SELECT {group_by}, {expr} as {alias} FROM people GROUP BY {group_by} ORDER BY {alias} DESC"
 
-    connection = get_db_connection()
-    cursor = connection.execute(sql_query)
-    rows = convert_rows_to_dicts(cursor)
-    connection.close()
-    return rows
+    connection = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.execute(sql_query)
+        return convert_rows_to_dicts(cursor)
+    except Exception as e:
+        return [{"error": str(e)}]
+    finally:
+        if connection:
+            connection.close()
 
 
 def list_field_values(field_name: str) -> list[str]:
@@ -109,16 +119,18 @@ def list_field_values(field_name: str) -> list[str]:
         "contract_type", "work_status", "job", "salary_currency"
     }
     if field_name not in allowed_fields:
-        return [f"Invalid field: {field_name}"]
+        return [{"error": f"Invalid field: {field_name}. Choose from: {', '.join(sorted(allowed_fields))}"}]
 
+    connection = None
     try:
         connection = get_db_connection()
         cursor = connection.execute(f"SELECT DISTINCT {field_name} FROM people ORDER BY {field_name}")
-        rows = [row[0] for row in cursor.fetchall() if row[0]]
-        connection.close()
-        return rows
+        return [row[0] for row in cursor.fetchall() if row[0]]
     except Exception as e:
-        return [str(e)]
+        return [{"error": str(e)}]
+    finally:
+        if connection:
+            connection.close()
 
 
 def run_query(sql_query: str) -> list[dict] | dict:
@@ -133,11 +145,13 @@ def run_query(sql_query: str) -> list[dict] | dict:
     if not sql_query.strip().upper().startswith("SELECT"):
         return {"error": "Only SELECT queries are allowed."}
 
+    connection = None
     try:
         connection = get_db_connection()
-        cursor = connection.execute(sql_query, [])
-        rows = convert_rows_to_dicts(cursor)
-        connection.close()
-        return rows
+        cursor = connection.execute(sql_query)
+        return convert_rows_to_dicts(cursor)
     except Exception as e:
         return {"error": str(e)}
+    finally:
+        if connection:
+            connection.close()
