@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { sendChatMessage } from './api'
 import './App.css'
-
-const API_URL = import.meta.env.VITE_API_URL
 
 function TypingDots() {
   return (
@@ -55,14 +54,8 @@ export default function App() {
 
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }))
-      const res = await fetch(`${API_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history }),
-      })
-      if (!res.ok) throw new Error(`Server error: ${res.status}`)
-      const data = await res.json()
-      setMessages([...newMessages, { role: 'assistant', content: data.response }])
+      const response = await sendChatMessage(text, history)
+      setMessages([...newMessages, { role: 'assistant', content: response }])
     } catch (err) {
       setMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}` }])
     } finally {

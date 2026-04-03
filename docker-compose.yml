@@ -7,6 +7,11 @@ services:
       - "3001:3001"
     env_file:
       - ./mcp-server/.env
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:3001/mcp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   chat-backend:
     build:
@@ -19,7 +24,8 @@ services:
       - MCP_SERVER_URL=http://mcp-server:3001/mcp
       - CORS_ORIGIN=http://localhost
     depends_on:
-      - mcp-server
+      mcp-server:
+        condition: service_healthy
 
   chat-frontend:
     build:
