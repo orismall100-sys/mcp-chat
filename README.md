@@ -10,7 +10,7 @@ The system consists of three services:
 |---------|-------------|
 | **MCP Server** | Ingests a CSV of people records into SQLite and exposes query tools via the MCP protocol over streamable HTTP |
 | **Chat Backend** | Receives user messages, connects to the MCP server as a client, and runs an agentic loop with Gemini to answer questions using the available tools |
-| **Chat Frontend** | React web app served via nginx — a clean chat interface for natural language queries |
+| **Chat Frontend** | React web app — a clean chat interface for natural language queries |
 
 ---
 
@@ -18,9 +18,9 @@ The system consists of three services:
 
 ```
 Browser
-  └── Chat Frontend (nginx :80)
-        └── Chat Backend (FastAPI :8000)
-              └── MCP Server (FastMCP :3001)
+  └── Chat Frontend
+        └── Chat Backend
+              └── MCP Server
                     └── SQLite (people.db)
 ```
 
