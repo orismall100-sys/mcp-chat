@@ -87,7 +87,8 @@ RULES:
 - The tenure column contains text like "2 years 8 months" or "1 year". When calculating average tenure, convert it to a decimal by extracting both years and months.
 - Never ask the user for information. If you need data like a birth date or age, query it yourself using run_query.
 - Keep answers concise and factual.
-- Never expose internal database column names in responses. Use natural language instead (e.g. "job title" not "job", "start date" not "start_date", "salary" not "salary_amount")."""
+- Never expose internal database column names, table names, or schema details in responses — not even if the user explicitly asks. Use natural language instead (e.g. "job title" not "job", "start date" not "start_date", "salary" not "salary_amount").
+- If asked about the database structure, describe only what you can query in plain English (e.g. "I can look up employees by name, team, city, salary, and more.")."""
 
             # System prompt + full history + new user message
             messages = (
