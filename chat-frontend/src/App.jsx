@@ -18,6 +18,7 @@ export default function App() {
   const [dark, setDark] = useState(false)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
+  const abortControllerRef = useRef(null)
 
   useEffect(() => {
     document.body.classList.toggle('dark', dark)
@@ -41,6 +42,10 @@ export default function App() {
     }
   }
 
+  function stopMessage() {
+    abortControllerRef.current?.abort()
+  }
+
   async function sendMessage() {
     const text = input.trim()
     if (!text || loading) return
@@ -52,12 +57,18 @@ export default function App() {
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setLoading(true)
 
+    abortControllerRef.current = new AbortController()
+
     try {
       const history = messages.map(message => ({ role: message.role, content: message.content }))
-      const response = await sendChatMessage(text, history)
+      const response = await sendChatMessage(text, history, abortControllerRef.current.signal)
       setMessages([...newMessages, { role: 'assistant', content: response, id: Date.now() }])
     } catch (err) {
-      setMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}`, id: Date.now() }])
+      if (err.name === 'AbortError') {
+        setMessages([...newMessages, { role: 'assistant', content: 'Response stopped.', id: Date.now() }])
+      } else {
+        setMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}`, id: Date.now() }])
+      }
     } finally {
       setLoading(false)
     }
@@ -121,16 +132,15 @@ export default function App() {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Ask about employees..."
-            disabled={loading}
             rows={1}
             autoFocus
           />
           <button
             className="chat-send-btn"
-            onClick={sendMessage}
-            disabled={loading || !input.trim()}
+            onClick={loading ? stopMessage : sendMessage}
+            disabled={!loading && !input.trim()}
           >
-            ↑
+            {loading ? '■' : '↑'}
           </button>
         </div>
         <p className="chat-hint">Press Enter to send · Shift+Enter for new line</p>

@@ -46,9 +46,9 @@ The chat backend acts as an MCP client — on each user message it connects to t
    ```bash
    cp .env.example .env
    ```
-   Fill in your `GEMINI_API_KEY` in `.env`.
+   Open `.env` in any text editor and fill in your `GEMINI_API_KEY`. Note: `.env` is a hidden file — use `ls -la` to verify it was created.
 
-3. Build and run:
+3. Make sure Docker Desktop is running, then build and run:
    ```bash
    docker compose up --build -d
    ```
